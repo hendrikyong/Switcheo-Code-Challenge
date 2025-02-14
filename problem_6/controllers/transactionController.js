@@ -1,18 +1,52 @@
-const { broadcastTransaction } = require('../models/transactionModel');
+const {
+  broadcastTransaction,
+  getAllTransactions,
+} = require("../models/transactionModel");
 
 async function handleTransactionRequest(req, res) {
-  const { from, to, value, gas, privateKey } = req.body; // Assuming the transaction details are in the request body
+  const { from, to, value, gas, privateKey } = req.body;
+
+  // Validate request parameters
+  if (!from || !to || !value || !gas || !privateKey) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Missing required fields" });
+  }
 
   try {
-    // Call the model function to broadcast the transaction
-    const receipt = await broadcastTransaction({ from, to, value, gas, privateKey });
+    // Broadcast the transaction
+    const receipt = await broadcastTransaction({
+      from,
+      to,
+      value,
+      gas,
+      privateKey,
+    });
 
-    // Send successful response with transaction receipt
+    // Return successful transaction receipt
     res.json({ success: true, receipt });
   } catch (error) {
-    // If an error occurs, send an error response
     res.status(500).json({ success: false, error: error.message });
   }
 }
 
-module.exports = { handleTransactionRequest };
+function getAllTransactionsHandler(req, res) {
+  try {
+    const transactions = getAllTransactions(); //fetch all transactions
+    const successTransactions = transactions.filter(tx => tx.status === true);
+    const failedTransactions = transactions.filter(tx => tx.status === false); 
+
+    res.json({
+      success: true,
+      successTransactions, // Return successful transactions
+      failedTransactions, // Return failed transactions
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to fetch transactions" });
+  }
+}
+
+
+module.exports = { handleTransactionRequest, getAllTransactionsHandler };
